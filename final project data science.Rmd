@@ -1,0 +1,389 @@
+---
+title: "Final project Data Science"
+author: "Jubilee Mwasa"
+date: "2026-10-24"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(tidyverse)
+
+
+gene_expression <- read.csv("~/Downloads/GSE85307_geneExpression.csv")
+gene_names<- read.csv("~/Downloads/GSE85307_geneNames.csv")
+participant_information<-read.csv("~/Downloads/GSE85307_covar-1.csv")
+
+
+# Check if sample IDs match
+sum(colnames(gene_expression)[-1] %in% participant_information$geoID)
+
+# Check if probe IDs match gene names
+sum(gene_expression$X %in% gene_names$PROBEID)
+
+#  only samples that have matching participant information
+matched_ids <- intersect(
+  colnames(gene_expression)[-1],
+  participant_information$geoID
+)
+
+# Select those samples and keep the probe ID column
+expression_matched <- gene_expression[
+  , c("X", matched_ids)
+]
+
+# Keep participant records in the same order as the expression samples
+participant_matched <- participant_information[
+  match(matched_ids, participant_information$geoID),
+]
+
+# Confirm the sample IDs are now in the same order
+all(colnames(expression_matched)[-1] == participant_matched$geoID)
+
+# Add the gene names to the expression data using probe IDs
+gene_expression_named <- merge(
+  gene_names,
+  expression_matched,
+  by.x = "PROBEID",
+  by.y = "X"
+)
+
+# Check the result
+head(gene_expression_named[, 1:3])
+
+il24_row <- gene_expression_named[
+  gene_expression_named$GENE == "IL24",
+]
+
+il24_row
+
+# Select IL24 gene expression
+il24_data <- gene_expression_named %>%
+  filter(GENE == "IL24")
+
+# Convert gene expression data to long format
+il24_long <- il24_data %>%
+  select(-PROBEID, -GENE) %>%
+  pivot_longer(
+    cols = everything(),
+    names_to = "geoID",
+    values_to = "IL24_expression"
+  )
+
+# Match IL24 expression to participant information
+il24_analysis <- il24_long %>%
+  left_join(participant_matched, by = "geoID")
+
+# Check the data
+head(il24_analysis)
+nrow(il24_analysis)
+
+
+plot1 <- ggplot(il24_analysis, aes(x = IL24_expression)) +
+  geom_histogram(
+    bins = 20,
+    fill = "#8AB9B0",
+    color = "white",
+    linewidth = 0.4,
+    na.rm = TRUE
+  ) +
+  labs(
+    title = "Distribution of IL24 Gene Expression",
+    x = "IL24 Gene Expression",
+    y = "Number of Participants"
+  ) +
+  theme_classic(base_size = 14) +
+  theme(
+    plot.title = element_text(
+      face = "bold",
+      hjust = 0.5,
+      size = 16
+    ),
+    axis.title = element_text(face = "bold", size = 13),
+    axis.text = element_text(size = 11, color = "black")
+  )
+
+print(plot1)
+
+
+
+# PLOT 2: SCATTERPLOT
+# IL24 Gene Expression vs. Maternal Age
+# Convert maternal age to numeric
+il24_analysis$mat_age_yrs <- as.numeric(
+  sub(".*: ", "", as.character(il24_analysis$mat_age_yrs))
+)
+
+# Check the result
+str(il24_analysis$mat_age_yrs)
+summary(il24_analysis$mat_age_yrs)
+
+plot2 <- ggplot(
+  il24_analysis,
+  aes(x = mat_age_yrs, y = IL24_expression)
+) +
+  geom_point(
+    size = 2.2,
+    alpha = 0.65,
+    color = "#C06C84",
+    na.rm = TRUE
+  ) +
+  geom_smooth(
+    method = "loess",
+    se = TRUE,
+    color = "#765285",
+    fill = "#D9C2E9",
+    na.rm = TRUE
+  ) +
+  labs(
+    title = "IL24 Gene Expression by Maternal Age",
+    x = "Maternal Age (years)",
+    y = "IL24 Gene Expression"
+  ) +
+  theme_classic(base_size = 14) +
+  theme(
+    plot.title = element_text(
+      face = "bold",
+      hjust = 0.5,
+      size = 16
+    ),
+    axis.title = element_text(face = "bold", size = 13),
+    axis.text = element_text(size = 11, color = "black")
+  )
+
+print(plot2)
+
+
+
+
+# PLOT 3: BOXPLOT
+# IL24 Expression by Preeclampsia Status and BMI
+
+# Extract the numeric BMI values from the original text
+# Make the grouping variables easier to interpret
+# PLOT 3: IL24 Expression by Preeclampsia Status and BMI
+
+# Step 1: Convert BMI to numeric and create BMI categories
+il24_analysis <- il24_analysis %>%
+  mutate(
+    mat_BMI = as.numeric(
+      sub(".*: ", "", as.character(mat_BMI))
+    ),
+    BMI_category = cut(
+      mat_BMI,
+      breaks = c(-Inf, 18.5, 25, 30, Inf),
+      labels = c(
+        "Underweight",
+        "Normal weight",
+        "Overweight",
+        "Obesity"
+      ),
+      right = FALSE
+    )
+  )
+
+# Step 2: Set category order
+il24_analysis <- il24_analysis %>%
+  mutate(
+    preg_preeclampsia = factor(preg_preeclampsia),
+    BMI_category = factor(
+      BMI_category,
+      levels = c(
+        "Underweight",
+        "Normal weight",
+        "Overweight",
+        "Obesity"
+      )
+    )
+  )
+
+# Step 3: Check sample sizes
+table(
+  il24_analysis$preg_preeclampsia,
+  il24_analysis$BMI_category,
+  useNA = "ifany"
+)
+
+# Step 4: Create boxplot with jittered individual observations
+plot3 <- ggplot(
+  il24_analysis,
+  aes(
+    x = preg_preeclampsia,
+    y = IL24_expression,
+    fill = BMI_category
+  )
+) +
+  geom_boxplot(
+    position = position_dodge(width = 0.8),
+    na.rm = TRUE,
+    color = "#51445F",
+    linewidth = 0.4,
+    alpha = 0.75,
+    outlier.shape = NA
+  ) +
+  geom_point(
+    aes(color = BMI_category),
+    position = position_jitterdodge(
+      jitter.width = 0.15,
+      dodge.width = 0.8
+    ),
+    alpha = 0.55,
+    size = 1.5,
+    na.rm = TRUE
+  ) +
+  scale_fill_manual(
+    values = c(
+      "Underweight" = "#B8A1D9",
+      "Normal weight" = "#E8A0BF",
+      "Overweight" = "#E9B872",
+      "Obesity" = "#8AB9B0"
+    ),
+    drop = FALSE
+  ) +
+  scale_color_manual(
+    values = c(
+      "Underweight" = "#8065A8",
+      "Normal weight" = "#B85F85",
+      "Overweight" = "#B27A32",
+      "Obesity" = "#4D8278"
+    ),
+    guide = "none",
+    drop = FALSE
+  ) +
+  labs(
+    title = "IL24 Expression by Preeclampsia Status and BMI",
+    x = "Pregnancy Outcome",
+    y = "IL24 Gene Expression",
+    fill = "Maternal BMI Category"
+  ) +
+  theme_classic(base_size = 14) +
+  theme(
+    plot.title = element_text(
+      face = "bold",
+      hjust = 0.5,
+      size = 16
+    ),
+    axis.title = element_text(face = "bold", size = 13),
+    axis.text.x = element_text(
+      size = 11,
+      color = "black"
+    ),
+    axis.text.y = element_text(
+      size = 11,
+      color = "black"
+    ),
+    legend.position = "right",
+    legend.title = element_text(face = "bold"),
+    plot.margin = margin(10, 15, 10, 10)
+  )
+
+# Step 5: Display plot
+print(plot3)
+```
+```{r}
+selected_genes <- c("ABCA9", "ABCB7")
+
+
+
+participant_plot_data <- participant_matched %>%
+  mutate(
+    mat_age_yrs = as.numeric(
+      sub(".*: ", "", as.character(mat_age_yrs))
+    ),
+    mat_BMI = as.numeric(
+      sub(".*: ", "", as.character(mat_BMI))
+    ),
+    preg_preeclampsia = as.factor(preg_preeclampsia),
+    BMI_category = case_when(
+      is.na(mat_BMI) ~ NA_character_,
+      mat_BMI < 18.5 ~ "Underweight",
+      mat_BMI < 25 ~ "Normal weight",
+      mat_BMI < 30 ~ "Overweight",
+      mat_BMI >= 30 ~ "Obese"
+    )
+  )
+
+# Generate three plots for each selected gene
+for (gene_name in selected_genes) {
+
+  # Extract expression data and attach participant information
+  gene_data <- gene_expression_named %>%
+    filter(GENE == gene_name) %>%
+    select(-PROBEID, -GENE) %>%
+    pivot_longer(
+      cols = everything(),
+      names_to = "geoID",
+      values_to = "expression"
+    ) %>%
+    mutate(expression = as.numeric(as.character(expression))) %>%
+    left_join(participant_plot_data, by = "geoID")
+
+  # Stop with a clear message if the gene is absent
+  if (nrow(gene_data) == 0) {
+    message("Gene ", gene_name, " was not found in gene_expression_named.")
+    next
+  }
+
+  # 1. Histogram: distribution of gene expression
+  p1 <- ggplot(gene_data, aes(x = expression)) +
+    geom_histogram(bins = 30, fill = "steelblue", color = "white") +
+    labs(
+      title = paste("Distribution of", gene_name, "Expression"),
+      x = "Gene Expression",
+      y = "Frequency"
+    ) +
+    theme_minimal()
+
+  print(p1)
+
+  # 2. Scatterplot: gene expression vs maternal age
+  p2 <- ggplot(
+    gene_data,
+    aes(x = mat_age_yrs, y = expression)
+  ) +
+    geom_point(na.rm = TRUE) +
+    geom_smooth(method = "lm", se = TRUE, na.rm = TRUE) +
+    labs(
+      title = paste(gene_name, "Expression vs Maternal Age"),
+      x = "Maternal Age (years)",
+      y = "Gene Expression"
+    ) +
+    theme_minimal()
+
+  print(p2)
+
+  # 3. Boxplot: gene expression by preeclampsia status and BMI category
+  p3 <- ggplot(
+    gene_data,
+    aes(
+      x = preg_preeclampsia,
+      y = expression,
+      fill = BMI_category
+    )
+  ) +
+    geom_boxplot(na.rm = TRUE) +
+    labs(
+      title = paste(gene_name, "Expression by Preeclampsia and BMI"),
+      x = "Preeclampsia Status",
+      y = "Gene Expression",
+      fill = "BMI Category"
+    ) +
+    theme_minimal()
+
+  print(p3)
+}
+
+
+
+
+```
