@@ -1,0 +1,211 @@
+\documentclass[11pt]{article}
+% ---------- Packages ----------
+\usepackage[margin=1in]{geometry}   % 1-inch page margins
+\usepackage{graphicx}               % lets us insert figures (PDFs)
+\usepackage{booktabs}               % clean table lines (\toprule, \midrule)
+\usepackage{caption}                % nicer captions
+\usepackage{subcaption}             % several plots side by side in one figure
+\usepackage{float}                  % [H] keeps figures where we put them
+\usepackage[hidelinks]{hyperref}    % clickable links (GitHub URL)
+
+\captionsetup{font=small, labelfont=bf}  % "Figure 1." in bold, small caption text
+
+% ---------- Title ----------
+\title{Expression of \textit{IL24}, \textit{ABCA9} and \textit{ABCB7}
+in Relation to Maternal Age, BMI and Preeclampsia}
+\author{Jubilee Mwasa}
+\date{November 11, 2026}
+
+\begin{document}
+\maketitle
+
+% ================= METHODS =================
+\section{Methods}
+\subsection{Data Source}
+Data were obtained from a nested case--control gene expression study within
+the Vitamin D Antenatal Asthma Reduction Trial (VDAART) \cite{mirzakhani2016},
+available from the Gene Expression Omnibus (accession GSE85307). Peripheral
+blood gene expression was measured at 10--18 weeks of gestation using the
+Affymetrix Human Gene 1.0 ST Array. The initial dataset contained 157 samples.
+
+\subsection{Data Processing and Sample Size}
+Expression samples were matched to participant information using the GEO
+sample identifier (geoID), and all 157 samples were successfully matched.
+Probe IDs were mapped to gene symbols, and expression values from multiple
+probes for the same gene were averaged. Covariate values were converted from
+text to numeric or categorical form. Maternal BMI was categorized using World
+Health Organization cut-points (underweight $<18.5$, normal weight
+18.5--24.9, overweight 25--29.9, obesity $\geq 30$~kg/m$^2$). No participants
+had missing data for pregnancy outcome, maternal age or BMI, so no samples
+were removed and the final sample included 157 participants (110 normal
+pregnancies and 47 preeclampsia cases).
+
+\subsection{Statistical Analysis}
+Three genes were selected for analysis: \textit{IL24}, \textit{ABCA9} and
+\textit{ABCB7}. For each gene, a histogram of expression, a scatterplot of
+expression against maternal age with a LOESS trend line, and a boxplot of
+expression by pregnancy outcome and BMI category were generated. Associations
+were assessed with Spearman correlation (maternal age), Wilcoxon rank-sum
+tests (pregnancy outcome) and Kruskal--Wallis tests (BMI category), with
+$p < 0.05$ considered statistically significant. Participant characteristics
+were summarized as mean (SD) for continuous variables and $n$ (\%) for
+categorical variables, stratified by pregnancy outcome. A heatmap of ten genes
+was generated using row-scaled (z-score) expression with hierarchical
+clustering of genes and participants (Euclidean distance, complete linkage).
+Finally, a dumbbell plot was used to compare mean z-scored expression of the
+same ten genes between pregnancy outcome groups.
+
+\subsection{Software}
+All analyses were performed in R version 4.6.1 \cite{R-base}. Data were
+processed using dplyr (v1.2.1) \cite{R-dplyr} and tidyr (v1.3.2)
+\cite{R-tidyr}. Figures were created with ggplot2 (v4.0.3) \cite{R-ggplot2}
+and pheatmap (v1.0.13) \cite{R-pheatmap}, and the report was generated with
+knitr (v1.51) \cite{R-knitr}.
+
+\subsection{Code Availability}
+All code is available at \url{https://github.com/YOUR-USERNAME/YOUR-REPO}.
+
+\section{Results}
+\subsection{Participant Characteristics}
+Maternal age was similar between groups, but women who developed
+preeclampsia had lower vitamin D levels, delivered earlier, and were more
+often classified as obese than women with normal pregnancies
+(Table~\ref{tab:summary}).
+
+\begin{table}[H]
+\centering
+\caption{Participant characteristics stratified by pregnancy outcome.
+Continuous variables are presented as mean (SD) and categorical variables
+as $n$ (\%). Vitamin D was measured as serum 25-hydroxyvitamin D at baseline.}
+\label{tab:summary}
+\small
+\input{table1.tex}
+\end{table}
+
+\subsection{Distribution of Gene Expression}
+  Expression of \textit{IL24}, \textit{ABCA9} and \textit{ABCB7} was unimodal
+  and approximately symmetric, with a slight right tail for \textit{IL24} and
+  \textit{ABCA9} (Figure~\ref{fig:hist}).
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.32\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{figures/IL24_histogram.pdf}
+  \caption{\textit{IL24}}
+\end{subfigure}
+\begin{subfigure}{0.32\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{figures/ABCA9_histogram.pdf}
+  \caption{\textit{ABCA9}}
+\end{subfigure}
+\begin{subfigure}{0.32\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{figures/ABCB7_histogram.pdf}
+  \caption{\textit{ABCB7}}
+\end{subfigure}
+\caption{Distribution of expression of (a) \textit{IL24}, (b) \textit{ABCA9}
+and (c) \textit{ABCB7} across all 157 participants.}
+\label{fig:hist}
+\end{figure}
+
+\subsection{Gene Expression and Maternal Age}
+None of the three genes was significantly associated with maternal age.
+\textit{IL24} ($\rho = 0.12$, $p = 0.14$) and \textit{ABCA9}
+($\rho = -0.04$, $p = 0.60$) showed no meaningful relationship, while
+\textit{ABCB7} showed a weak, non-significant negative trend
+($\rho = -0.15$, $p = 0.057$) (Figure~\ref{fig:scatter}).
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.32\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{figures/IL24_scatter.pdf}
+  \caption{\textit{IL24}}
+\end{subfigure}
+\begin{subfigure}{0.32\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{figures/ABCA9_scatter.pdf}
+  \caption{\textit{ABCA9}}
+\end{subfigure}
+\begin{subfigure}{0.32\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{figures/ABCB7_scatter.pdf}
+  \caption{\textit{ABCB7}}
+\end{subfigure}
+\caption{Gene expression versus maternal age for (a) \textit{IL24},
+(b) \textit{ABCA9} and (c) \textit{ABCB7}. Each point represents one
+participant; the line shows a LOESS fit with a 95\% confidence band.}
+\label{fig:scatter}
+\end{figure}
+
+\subsection{Gene Expression by Pregnancy Outcome and BMI}
+Expression of \textit{IL24}, \textit{ABCA9} and \textit{ABCB7} did not
+differ between normal and preeclamptic pregnancies ($p = 0.60$, $0.43$
+and $0.81$, respectively) or across maternal BMI categories ($p = 0.78$,
+$0.49$ and $0.15$, respectively) (Figure~\ref{fig:box}).
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.49\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{figures/IL24_boxplot.pdf}
+  \caption{\textit{IL24}}
+\end{subfigure}
+\begin{subfigure}{0.49\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{figures/ABCA9_boxplot.pdf}
+  \caption{\textit{ABCA9}}
+\end{subfigure}
+
+\vspace{0.5em}
+\begin{subfigure}{0.49\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{figures/ABCB7_boxplot.pdf}
+  \caption{\textit{ABCB7}}
+\end{subfigure}
+\caption{Gene expression by pregnancy outcome and maternal BMI category for
+(a) \textit{IL24}, (b) \textit{ABCA9} and (c) \textit{ABCB7}. Boxes show the
+median and interquartile range; points represent individual participants.}
+\label{fig:box}
+\end{figure}
+
+\subsection{Clustering of Ten Genes}
+Hierarchical clustering of ten genes did not separate participants by
+pregnancy outcome or maternal BMI category, as both tracking bars were
+intermixed across clusters (Figure~\ref{fig:heatmap}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/heatmap.pdf}
+\caption{Heatmap of row-scaled (z-score) expression for ten genes across
+157 participants. Genes (rows) and participants (columns) were clustered
+hierarchically using Euclidean distance and complete linkage. Tracking bars
+indicate pregnancy outcome and maternal BMI category. Red indicates higher
+and blue lower expression relative to each gene's mean; colors are capped
+at $\pm 3$ SD.}
+\label{fig:heatmap}
+\end{figure}
+
+
+\subsection{Differences in Mean Expression Between Outcome Groups}
+Differences in mean expression between outcome groups were small for all
+ten genes (less than 0.4 standard deviations), and the 95\% confidence
+intervals of the two groups overlapped for every gene. \textit{ATG101},
+\textit{ANKRD60} and \textit{AKR1C8} showed the largest increases in
+preeclampsia, whereas \textit{CATSPERT} and \textit{BHMT} were slightly
+lower (Figure~\ref{fig:dumbbell}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\textwidth]{figures/dumbbell.pdf}
+\caption{Dumbbell plot of mean z-scored expression for ten genes in normal
+($n = 110$) and preeclamptic ($n = 47$) pregnancies. Points show group means
+with 95\% confidence intervals; grey bars connect the two group means for
+each gene. Genes are ordered by the difference between groups.}
+\label{fig:dumbbell}
+\end{figure}
+\bibliographystyle{unsrt}     % numbers references in the order they are cited
+\bibliography{references}     % uses references.bib
+
+\end{document}
